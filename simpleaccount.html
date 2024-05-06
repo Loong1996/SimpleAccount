@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: transparent;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        tr:nth-child(even) {
+            background-color: white;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        td:first-child, td:nth-child(2) {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100px;
+        }
+        button {
+            background-color: transparent;
+            color: black;
+            padding: 10px 24px;
+            border: none;
+            text-align: left;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #f2f2f2;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        #editDetailInput {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 20px;
+        }
+
+        #detailModalButton {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        #editDoneBtn {
+            text-align: center;
+            background-color: #34D399;
+            color: white;
+            flex: 0.5;
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+        #editDoneBtn:hover {
+            transform: scale(1.1);
+        }
+
+        #editCancelBtn {
+            text-align: center;
+            background-color: #F87171;
+            color: white;
+            flex: 0.1;
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+        #editCancelBtn:hover {
+            transform: scale(1.1);
+        }
+
+  /* 为表单中的input和button添加基本样式 */
+    /* 使用flex布局将表单元素放在同一行 */
+    #dateRangeForm {
+    display: flex;
+    align-items: center; /* 垂直居中对齐 */
+    justify-content: space-between; /* 子元素之间分配空白 */
+  }
+  
+  #dateRangeForm input[type="date"],
+  #dateRangeForm button {
+    padding: 10px;
+    margin: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  #dateRangeForm div {
+    font-size: 32px;
+    text-align: center;
+  }
+
+  /* 美化日期选择器 */
+  #dateRangeForm input[type="date"] {
+    background: #f8f8f8;
+    color: #333;
+  }
+
+  /* 美化按钮 */
+  #dateRangeForm button {
+    background-color: #4CAF50;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+
+  /* 鼠标悬停在按钮上时的样式 */
+  #dateRangeForm button:hover {
+    background-color: #45a049;
+  }
+  
+  /* 当按钮被激活（按下）时的样式 */
+  #dateRangeForm button:active {
+    background-color: #397d34;
+  }
+
+  #dateRangeForm {
+    display: inline-block;
+    /* 其他样式，如需要的话 */
+  }
+
+    </style>
+</head>
+<body>
+    <h2>记账表格</h2>
+
+    <form id="dateRangeForm">
+        <label for="startDate">起始日期:</label>
+        <input type="date" id="startDate" name="startDate">
+        <label for="endDate">结束日期:</label>
+        <input type="date" id="endDate" name="endDate"><br>
+        <button type="button" id="queryButton" onclick="querySpendDay(this)">查询</button>
+        <div data-type="total">总计: <span id="totalAmount">0</span></div>
+    </form>
+
+    <script>
+        // 获取日期选择器元素
+        var startDateInput = document.getElementById('startDate');
+        var endDateInput = document.getElementById('endDate');
+      
+        var currentDate = new Date();
+        // 获取当前月份的第一天和最后一天
+        // 获取当前月份的UTC日期
+        var currentMonthUTC = currentDate.getUTCMonth();
+        var currentYearUTC = currentDate.getUTCFullYear();
+        var startDayOfCurrentMonthUTC = new Date(Date.UTC(currentYearUTC, currentMonthUTC, 1));
+        // 计算当前月份的最后一天（UTC）
+        var lastDayOfCurrentMonthUTC = new Date(Date.UTC(currentYearUTC, currentMonthUTC + 1, 0));
+
+        // 设置日期选择器的默认值
+        //startDateInput.value = startDate.toLocaleString(); // 设置起始日期为上个月的最后一天
+        startDateInput.value = startDayOfCurrentMonthUTC.toISOString().split('T')[0];
+        endDateInput.value = lastDayOfCurrentMonthUTC.toISOString().split('T')[0];
+      </script>
+
+    <script>
+        let SpendDays = {}
+
+        function convertDateFormat(isoDateString) {
+            // 使用Date对象解析ISO日期字符串
+            const date = new Date(isoDateString);
+            // 获取年、月、日，并将其转换为两位数的字符串
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            // 组合成新的日期格式
+            const newFormat = `${year}${month}${day}`;
+            return newFormat;
+        }
+
+        function praseJsonData(data) {
+            for (let timestamp in data) {
+                if (data.hasOwnProperty(timestamp)) {
+                    let entry = data[timestamp];
+                    SpendDays[timestamp] = {
+                        time: entry.time,
+                        detail: entry.detail,
+                        total: entry.total
+                    };
+                }
+            }
+        }
+
+        // When the query button is clicked, send an AJAX request to the server
+        function querySpendDay(button) {
+            // 请求数据之前先清空数据
+            let table = document.querySelector('table');
+            table.innerHTML = '';
+
+            var startDate = document.getElementById('startDate').value;
+            var endDate = document.getElementById('endDate').value;
+            var url = `http://localhost:8000/api/query?startDate=${startDate}&endDate=${endDate}`
+            fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                  }
+
+                return response.json();
+             })
+            .then(data => {
+                SpendDays = {};
+                // console.log(data)
+                // 保存数据至字典
+                praseJsonData(data)
+                //console.log(SpendDays)
+
+                // 选择表格元素
+                let table = document.querySelector('table');
+                // 在添加新数据之前清空表格内容
+                table.innerHTML = '';
+
+                // 创建行元素
+                let headRow = document.createElement('tr');
+                // 创建单元格并设置内容
+                let headDate = document.createElement('th');
+                headDate.textContent = "日期";
+                let headTotal = document.createElement('th');
+                headTotal.textContent = "当日消费";
+                let headDetail = document.createElement('th');
+                headDetail.textContent = "详情";
+                headRow.appendChild(headDate);
+                headRow.appendChild(headTotal);
+                headRow.appendChild(headDetail);
+                table.appendChild(headRow);
+
+                const dateBeg = convertDateFormat(startDate)
+                const dateEnd = convertDateFormat(endDate)
+                let total = 0;
+                for (let i = dateBeg; i <= dateEnd; i++) {
+
+                        // 创建行元素
+                        let row = document.createElement('tr');
+                        // 创建单元格并设置内容
+                        let dateCell = document.createElement('td');
+                        let totalCell = document.createElement('td');
+                        let detailCell = document.createElement('td');
+                        let button = document.createElement('button');
+
+                    if (SpendDays.hasOwnProperty(i)) {
+                        let entry = SpendDays[i];
+                        dateCell.textContent = i; // 格式化日期，注意时间戳转毫秒
+                        totalCell.textContent = entry.total; // 总结
+                        button.textContent = entry.detail;
+                        total += entry.total;
+                        // 存在数据
+                    } else {
+                        dateCell.textContent = i;
+                        // 不存在数据
+                    }
+
+                    // 注意：实际应用中应避免使用内联JavaScript，这里仅为示例
+                    button.setAttribute('onclick', 'showEditDetailModal(this)');
+                    // button.dataset.timestamp = i; // 将时间戳作为数据属性附加到按钮上
+                    detailCell.appendChild(button);
+                    // 将单元格添加到行中
+                    row.appendChild(dateCell);
+                    row.appendChild(totalCell);
+                    row.appendChild(detailCell);
+                    // 将行添加到表格中
+                    table.appendChild(row);
+                }
+
+                document.getElementById("totalAmount").innerText = total
+             })
+            .catch(error => console.error('There has been a problem with your fetch operation:', error));
+        };
+    </script>
+
+    <!-- 模态对话框 -->
+    <div id="editDetailModal" class="modal">
+    <div class="modal-content">
+        <!-- <span class="close">×</span> -->
+        <textarea id="editDetailInput"></textarea>
+        <div id="detailModalButton">
+        <button id="editCancelBtn" onclick="editCancel()">取消</button>
+        <button id="editDoneBtn" onclick="editDone()">确认</button>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        var currentButton;
+        var modal = document.getElementById("editDetailModal");
+        function showEditDetailModal(button) {
+            currentButton = button;
+            modal.style.display = "block";
+        }
+
+        function editDone() {
+            var txt = document.getElementById("editDetailInput").value;
+            if (txt == "") {
+                txt = "用户取消了输入。";
+            }
+            currentButton.innerHTML = txt;
+            modal.style.display = "none";
+        }
+
+        function editCancel() {
+            modal.style.display = "none";
+        }
+    </script>
+
+    <table>
+        <!-- <tr>
+            <th>日期</th>
+            <th>总结</th>
+            <th>详情</th>
+        </tr>
+        <tr>
+            <td>%s</td>
+            <td>%d</td>
+            <td><button onclick="showEditDetailModal(this)">%s</button></td>
+        </tr> -->
+    </table>
+</body>
+</html>
