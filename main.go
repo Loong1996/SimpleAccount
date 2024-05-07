@@ -14,14 +14,14 @@ import (
 
 type SpendOne struct {
 	name  string
-	money int
+	money float64
 }
 
 type SpendOneDay struct {
 	Time     int        `json:"time"`
 	Detail   string     `json:"detail"`
 	SpendLst []SpendOne `json:"-"`
-	Total    int        `json:"total"`
+	Total    float64    `json:"total"`
 }
 
 var SpendDays map[int]*SpendOneDay
@@ -45,7 +45,7 @@ func (this *SpendOneDay) praseSpendDetail() error {
 
 		toNum := false
 		v := str[i]
-		if strings.ContainsRune("0123456789", v) {
+		if strings.ContainsRune("0123456789.", v) {
 			numStr = append(numStr, v)
 			if len(keyStr) > 0 {
 				curSpend.name = string(keyStr)
@@ -73,7 +73,7 @@ func (this *SpendOneDay) praseSpendDetail() error {
 		if toNum {
 			str := string(numStr)
 			if len(str) > 0 {
-				money, err := strconv.Atoi(str)
+				money, err := strconv.ParseFloat(str, 64)
 				if err != nil {
 					return err
 				}
