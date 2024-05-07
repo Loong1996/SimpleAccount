@@ -16,6 +16,19 @@ endDateInput.value = lastDayOfCurrentMonthUTC.toISOString().split('T')[0];
 /////////////////////////////////////////////////////////
 var SpendDays = {}
 
+function getCurrentBaseUrl() {
+    var protocol = window.location.protocol;
+    var hostname = window.location.hostname;
+    var port = window.location.port; // 端口号
+    var baseUrl = protocol + "//" + hostname;
+    // 如果有端口号，将其添加到基础URL中
+    if (port) {
+        baseUrl += ":" + port;
+    }
+
+    return baseUrl;
+}
+
 function convertDateFormat(isoDateString) {
     // 使用Date对象解析ISO日期字符串
     const date = new Date(isoDateString);
@@ -132,7 +145,7 @@ function querySpendDay() {
 
     var startDate = document.getElementById('startDate').value;
     var endDate = document.getElementById('endDate').value;
-    var url = `http://localhost:8000/api/query?startDate=${startDate}&endDate=${endDate}`
+    var url = `${getCurrentBaseUrl()}/api/query?startDate=${startDate}&endDate=${endDate}`
     fetch(url)
     .then(response => {
             if (!response.ok) {
@@ -174,7 +187,7 @@ function editDone() {
     const specificDigits = currentButton.id.match(/^(\w+)(\d{8})$/);
     var time = specificDigits[2];
     // 更改数据请求
-    var url = `http://localhost:8000/api/update?time=${time}&detail=${encodedValue}`
+    var url = `${getCurrentBaseUrl()}/api/update?time=${time}&detail=${encodedValue}`
     fetch(url)
     .then(response => {
             if (!response.ok) {
