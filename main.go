@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -30,71 +30,30 @@ func (this *SpendOneDay) praseSpendDetail() error {
 	this.SpendLst = nil
 	this.Total = 0
 
-	str := []rune(this.Detail)
-	var numStr []rune
-	var keyStr []rune
-	curSpend := SpendOne{}
-	negative := true
-
-	deadLoop := 0
-	for i := 0; i < len(str); i++ {
-		deadLoop++
-		if deadLoop > 4096 {
-			return fmt.Errorf("spend detail too long")
+	re := regexp.MustCompile(`(\$[+-]?\d+(?:\.\d+)?)`)
+	// 用正则表达式查找所有匹配的数字
+	matches := re.FindAllString(this.Detail, -1)
+	// 输出所有匹配的数字
+	for _, match := range matches {
+		if len(match) <= 1 || match[0] != '$' {
+			return fmt.Errorf("error")
 		}
 
-		toNum := false
-		v := str[i]
-		if strings.ContainsRune("0123456789.", v) {
-			numStr = append(numStr, v)
-			if len(keyStr) > 0 {
-				curSpend.name = string(keyStr)
-				// fmt.Printf("Key:%s\n", string(keyStr))
-				keyStr = keyStr[:0]
-			}
-		} else {
-			if strings.ContainsRune("+", v) {
-				if len(numStr) > 0 {
-					i--
-					toNum = true
-				} else {
-					negative = false
-				}
-			} else {
-				toNum = true
-				keyStr = append(keyStr, v)
-			}
+		str := match[1:]
+		negative := true
+		if str[0] == '-' {
+			str = str[1:]
+		} else if str[0] == '+' {
+			str = str[1:]
+			negative = false
 		}
 
-		if i == len(str)-1 {
-			toNum = true
+		num, _ := strconv.ParseFloat(str, 64)
+		if negative {
+			num = -num
 		}
 
-		if toNum {
-			str := string(numStr)
-			if len(str) > 0 {
-				money, err := strconv.ParseFloat(str, 64)
-				if err != nil {
-					return err
-				}
-
-				if negative {
-					//fmt.Printf("消费:-%d\n", money)
-					curSpend.money = -money
-					this.Total = this.Total - money
-				} else {
-					curSpend.money = money
-					this.Total = this.Total + money
-					//fmt.Printf("消费:+%d\n", money)
-				}
-
-				this.SpendLst = append(this.SpendLst, curSpend)
-			}
-
-			negative = true
-			curSpend = SpendOne{}
-			numStr = numStr[:0]
-		}
+		this.Total += num
 	}
 
 	return nil
@@ -219,6 +178,7 @@ type Config struct {
 var config Config
 
 func main() {
+
 	var err error
 	SpendDays, err = loadSpendDays()
 	if err != nil {
