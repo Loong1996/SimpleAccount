@@ -41,6 +41,64 @@ function praseJsonData(data) {
     }
 }
 
+function renderSpendDayTable(dateBeg, dateEnd) {
+    // 选择表格元素
+    let table = document.querySelector('table');
+    // 在添加新数据之前清空表格内容
+    table.innerHTML = '';
+    // 创建行元素
+    let headRow = document.createElement('tr');
+    // 创建单元格并设置内容
+    let headDate = document.createElement('th');
+    headDate.textContent = "日期";
+    let headTotal = document.createElement('th');
+    headTotal.textContent = "当日消费";
+    let headDetail = document.createElement('th');
+    headDetail.textContent = "详情";
+    headRow.appendChild(headDate);
+    headRow.appendChild(headTotal);
+    headRow.appendChild(headDetail);
+    table.appendChild(headRow);
+
+    let total = 0;
+    for (let i = dateBeg; i <= dateEnd; i++) {
+
+            // 创建行元素
+            let row = document.createElement('tr');
+            // 创建单元格并设置内容
+            let dateCell = document.createElement('td');
+            let totalCell = document.createElement('td');
+            let detailCell = document.createElement('td');
+            let button = document.createElement('button');
+
+        if (SpendDays.hasOwnProperty(i)) {
+            let entry = SpendDays[i];
+            dateCell.textContent = i; // 格式化日期，注意时间戳转毫秒
+            totalCell.textContent = entry.total; // 总结
+            button.textContent = entry.detail;
+            total += entry.total;
+            // 存在数据
+        } else {
+            dateCell.textContent = i;
+            // 不存在数据
+        }
+
+        // 注意：实际应用中应避免使用内联JavaScript，这里仅为示例
+        button.setAttribute('onclick', 'showEditDetailModal(this)');
+        button.setAttribute('id', `tableBtn${i}`);
+        // button.dataset.timestamp = i; // 将时间戳作为数据属性附加到按钮上
+        detailCell.appendChild(button);
+        // 将单元格添加到行中
+        row.appendChild(dateCell);
+        row.appendChild(totalCell);
+        row.appendChild(detailCell);
+        // 将行添加到表格中
+        table.appendChild(row);
+    }
+
+    document.getElementById("totalAmount").innerText = total
+}
+
 function querySpendDay(button) {
     // 请求数据之前先清空数据
     let table = document.querySelector('table');
@@ -63,65 +121,10 @@ function querySpendDay(button) {
         // 保存数据至字典
         praseJsonData(data)
         //console.log(SpendDays)
-
-        // 选择表格元素
-        let table = document.querySelector('table');
-        // 在添加新数据之前清空表格内容
-        table.innerHTML = '';
-
-        // 创建行元素
-        let headRow = document.createElement('tr');
-        // 创建单元格并设置内容
-        let headDate = document.createElement('th');
-        headDate.textContent = "日期";
-        let headTotal = document.createElement('th');
-        headTotal.textContent = "当日消费";
-        let headDetail = document.createElement('th');
-        headDetail.textContent = "详情";
-        headRow.appendChild(headDate);
-        headRow.appendChild(headTotal);
-        headRow.appendChild(headDetail);
-        table.appendChild(headRow);
-
         const dateBeg = convertDateFormat(startDate)
         const dateEnd = convertDateFormat(endDate)
-        let total = 0;
-        for (let i = dateBeg; i <= dateEnd; i++) {
-
-                // 创建行元素
-                let row = document.createElement('tr');
-                // 创建单元格并设置内容
-                let dateCell = document.createElement('td');
-                let totalCell = document.createElement('td');
-                let detailCell = document.createElement('td');
-                let button = document.createElement('button');
-
-            if (SpendDays.hasOwnProperty(i)) {
-                let entry = SpendDays[i];
-                dateCell.textContent = i; // 格式化日期，注意时间戳转毫秒
-                totalCell.textContent = entry.total; // 总结
-                button.textContent = entry.detail;
-                total += entry.total;
-                // 存在数据
-            } else {
-                dateCell.textContent = i;
-                // 不存在数据
-            }
-
-            // 注意：实际应用中应避免使用内联JavaScript，这里仅为示例
-            button.setAttribute('onclick', 'showEditDetailModal(this)');
-            // button.dataset.timestamp = i; // 将时间戳作为数据属性附加到按钮上
-            detailCell.appendChild(button);
-            // 将单元格添加到行中
-            row.appendChild(dateCell);
-            row.appendChild(totalCell);
-            row.appendChild(detailCell);
-            // 将行添加到表格中
-            table.appendChild(row);
-        }
-
-        document.getElementById("totalAmount").innerText = total
-        })
+        renderSpendDayTable(dateBeg, dateEnd)
+    })
     .catch(error => console.error('There has been a problem with your fetch operation:', error));
 };
 
@@ -132,18 +135,40 @@ var currentButton;
 var modal = document.getElementById("editDetailModal");
 function showEditDetailModal(button) {
     currentButton = button;
+    document.getElementById("editDetailInput").value = button.textContent;
     modal.style.display = "block";
 }
 
 function editDone() {
     var txt = document.getElementById("editDetailInput").value;
     if (txt == "") {
-        txt = "用户取消了输入。";
+        // todo 空内容
     }
-    currentButton.innerHTML = txt;
+
+    const specificDigits = currentButton.id.match(/^(\w+)(\d{8})$/);
+    var time = specificDigits[2];
+    // 更改数据请求
+    var url = `http://localhost:8000/api/update?time=${time}&detail=${txt}`
+    fetch(url)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok ' + response.statusText);
+            }
+
+            return response.json();
+        })
+    .then(data => {
+        
+    })
+    .catch(error => console.error('There has been a problem with your fetch operation:', error));
+
+    // currentButton.textContent = txt;
+
     modal.style.display = "none";
 }
 
 function editCancel() {
+    currentButton = null
+    document.getElementById("editDetailInput").textContent = "";
     modal.style.display = "none";
 }

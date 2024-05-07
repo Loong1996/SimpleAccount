@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -134,6 +135,33 @@ func QueryHandler(w http.ResponseWriter, r *http.Request) {
 	// w.Write([]byte(result))
 }
 
+func UpdateHandler(w http.ResponseWriter, r *http.Request) {
+	t, _ := strconv.Atoi(r.URL.Query().Get("time"))
+	oneday := &SpendOneDay{
+		Time:   t,
+		Detail: r.URL.Query().Get("detail"),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	err := oneday.praseSpendDetail()
+	if err == nil {
+		SpendDays[t] = oneday
+		// 将SpendDays序列化为JSON
+		jsonData, err := json.Marshal(SpendDays)
+		if err != nil {
+			log.Fatalf("Error marshalling to JSON: %s", err)
+		}
+
+		ioutil.WriteFile("spend_days.json", jsonData, 0644)
+		jsonData, err = json.Marshal(oneday)
+		// fmt.Println(string(jsonData))
+		w.Write(jsonData)
+	} else {
+		// log.Fatalf("errrrrrr %s", err)
+	}
+}
+
 func loadSpendDays() (map[int]*SpendOneDay, error) {
 	// 从文件中读取JSON数据
 	jsonData, err := ioutil.ReadFile("spend_days.json")
@@ -167,14 +195,6 @@ func main() {
 		return
 	}
 
-	// // 将SpendDays序列化为JSON
-	// jsonData, err := json.MarshalIndent(SpendDays, "", "    ")
-	// if err != nil {
-	// 	log.Fatalf("Error marshalling to JSON: %s", err)
-	// }
-
-	// ioutil.WriteFile("spend_days.json", jsonData, 0644)
-
 	fs := http.FileServer(http.Dir("./static"))
 	// 静态
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -195,6 +215,7 @@ func main() {
 
 	// 数据查询
 	http.HandleFunc("/api/query", QueryHandler)
+	http.HandleFunc("/api/update", UpdateHandler)
 	// 监听
 	http.ListenAndServe(":8000", nil)
 }
