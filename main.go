@@ -12,6 +12,16 @@ import (
 	"time"
 )
 
+// /////////////////////////////
+// 配置
+// /////////////////////////////
+type Config struct {
+	Port     int    `json:"port"`
+	Password string `json:"pwd"`
+}
+
+var config Config
+
 type SpendOne struct {
 	name  string
 	money float64
@@ -107,6 +117,12 @@ func MainHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func QueryHandler(w http.ResponseWriter, r *http.Request) {
+	pwd := r.URL.Query().Get("pwd")
+	if pwd != config.Password {
+		http.Error(w, "Invalid Password", http.StatusBadRequest)
+		return
+	}
+
 	// 暂时不错优化，直接全量返回
 	w.Header().Set("Content-Type", "application/json")
 	jsonData, _ := json.Marshal(SpendDays)
@@ -137,6 +153,12 @@ func QueryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func QueryPropertyHandler(w http.ResponseWriter, r *http.Request) {
+	pwd := r.URL.Query().Get("pwd")
+	if pwd != config.Password {
+		http.Error(w, "Invalid Password", http.StatusBadRequest)
+		return
+	}
+
 	var total float64
 	for _, v := range SpendDays {
 		total += v.Total
@@ -146,6 +168,12 @@ func QueryPropertyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateHandler(w http.ResponseWriter, r *http.Request) {
+	pwd := r.URL.Query().Get("pwd")
+	if pwd != config.Password {
+		http.Error(w, "Invalid Password", http.StatusBadRequest)
+		return
+	}
+
 	t, err := strconv.Atoi(r.URL.Query().Get("time"))
 	if err != nil {
 		http.Error(w, "Invalid Time", http.StatusBadRequest)
@@ -217,15 +245,6 @@ func loadSpendDays() (map[int]*SpendOneDay, error) {
 
 	return temp, nil
 }
-
-// /////////////////////////////
-// 配置
-// /////////////////////////////
-type Config struct {
-	Port int `json:"port"`
-}
-
-var config Config
 
 func main() {
 	var err error

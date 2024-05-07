@@ -12,6 +12,11 @@ startDateInput.value = startDayOfCurrentMonthUTC.toISOString().split('T')[0];
 endDateInput.value = lastDayOfCurrentMonthUTC.toISOString().split('T')[0];
 
 /////////////////////////////////////////////////////////
+// 读取本地密码
+/////////////////////////////////////////////////////////
+document.getElementById('pwdInput').value = localStorage.getItem('simpleaccpwd');
+
+/////////////////////////////////////////////////////////
 // 请求消费数据及渲染处理
 /////////////////////////////////////////////////////////
 var SpendDays = {}
@@ -145,7 +150,9 @@ function querySpendDay() {
 
     var startDate = document.getElementById('startDate').value;
     var endDate = document.getElementById('endDate').value;
-    var url = `${getCurrentBaseUrl()}/api/query?startDate=${startDate}&endDate=${endDate}`
+    var pwd = document.getElementById('pwdInput').value;
+    localStorage.setItem('simpleaccpwd', pwd);
+    var url = `${getCurrentBaseUrl()}/api/query?startDate=${startDate}&endDate=${endDate}&pwd=${pwd}`
     fetch(url)
     .then(response => {
             if (!response.ok) {
@@ -163,17 +170,18 @@ function querySpendDay() {
         //console.log(SpendDays)
         refreshSpendDayTable();
         refreshTotalAmount();
+        queryProperty();
     })
-    .catch(error => {window.alert("querySpendDay出现错误"); console.error('There has been a problem with your fetch operation:', error); });
+    .catch(error => { console.error('There has been a problem with your fetch operation:', error); });
 };
-
-querySpendDay();
 
 /////////////////////////////////////////////////////////
 // 实时资产
 /////////////////////////////////////////////////////////
 function queryProperty() {
-    var url = `${getCurrentBaseUrl()}/api/query_property`
+    var pwd = document.getElementById('pwdInput').value;
+    localStorage.setItem('simpleaccpwd', pwd);
+    var url = `${getCurrentBaseUrl()}/api/query_property?pwd=${pwd}`
     fetch(url)
     .then(response => {
             if (!response.ok) {
@@ -193,10 +201,8 @@ function queryProperty() {
             elem.style.color = "red";
         }
     })
-    .catch(error => { window.alert("queryProperty出现错误"); console.error('There has been a problem with your fetch operation:', error); });
+    .catch(error => { console.error('There has been a problem with your fetch operation:', error); });
 }
-
-queryProperty();
 
 /////////////////////////////////////////////////////////
 // 模态对话框
@@ -214,8 +220,10 @@ function editDone() {
     var encodedValue = encodeURIComponent(txt);
     const specificDigits = currentButton.id.match(/^(\w+)(\d{8})$/);
     var time = specificDigits[2];
+    var pwd = document.getElementById('pwdInput').value;
+    localStorage.setItem('simpleaccpwd', pwd);
     // 更改数据请求
-    var url = `${getCurrentBaseUrl()}/api/update?time=${time}&detail=${encodedValue}`
+    var url = `${getCurrentBaseUrl()}/api/update?time=${time}&detail=${encodedValue}&pwd=${pwd}`
     fetch(url)
     .then(response => {
             if (!response.ok) {
@@ -248,7 +256,7 @@ function editDone() {
         refreshTotalAmount();
         queryProperty();
     })
-    .catch(error => { window.alert("editDone出现错误"); console.error('There has been a problem with your fetch operation:', error); });
+    .catch(error => { console.error('There has been a problem with your fetch operation:', error); });
 
     modal.style.display = "none";
 }

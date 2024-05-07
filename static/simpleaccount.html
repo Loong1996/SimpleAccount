@@ -5,13 +5,14 @@
     <link rel="stylesheet" href="simpleaccount.css">
 </head>
 <body>
-    <h2>记账表格</h2>
-
+    <h2>记账网页</h2>
     <form id="dateRangeForm">
         <label for="startDate">起始日期:</label>
         <input type="date" id="startDate" name="startDate">
         <label for="endDate">结束日期:</label>
         <input type="date" id="endDate" name="endDate"><br>
+        <label>密码:</label>
+        <input type="password" id="pwdInput"></input><br>
         <button type="button" id="queryButton" onclick="querySpendDay()">查询</button>
         <div data-type="property">实时资产: <span id="propertyAmount">0</span></div>
         <div data-type="total">筛选合计: <span id="totalAmount">0</span></div>
