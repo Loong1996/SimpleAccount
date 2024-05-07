@@ -246,10 +246,10 @@ function editDone() {
         }
 
         refreshTotalAmount();
+        queryProperty();
     })
     .catch(error => { window.alert("editDone出现错误"); console.error('There has been a problem with your fetch operation:', error); });
 
-    queryProperty();
     modal.style.display = "none";
 }
 
