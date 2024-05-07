@@ -105,11 +105,10 @@ func MainHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func QueryHandler(w http.ResponseWriter, r *http.Request) {
+	// 暂时不错优化，直接全量返回
 	w.Header().Set("Content-Type", "application/json")
-
 	jsonData, _ := json.Marshal(SpendDays)
-	fmt.Println(string(jsonData))
-
+	// fmt.Println(string(jsonData))
 	w.Write(jsonData)
 
 	// startDateStr := r.URL.Query().Get("startDate")
@@ -136,29 +135,40 @@ func QueryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateHandler(w http.ResponseWriter, r *http.Request) {
-	t, _ := strconv.Atoi(r.URL.Query().Get("time"))
+	t, err := strconv.Atoi(r.URL.Query().Get("time"))
+	if err != nil {
+		http.Error(w, "Invalid Time", http.StatusBadRequest)
+		return
+	}
+
 	oneday := &SpendOneDay{
 		Time:   t,
 		Detail: r.URL.Query().Get("detail"),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
-	err := oneday.praseSpendDetail()
+	err = oneday.praseSpendDetail()
 	if err == nil {
-		SpendDays[t] = oneday
-		// 将SpendDays序列化为JSON
-		jsonData, err := json.Marshal(SpendDays)
+		jsonData, err := json.Marshal(oneday)
 		if err != nil {
-			log.Fatalf("Error marshalling to JSON: %s", err)
+			http.Error(w, "Json Marshal Fail", http.StatusBadRequest)
+			return
 		}
 
-		ioutil.WriteFile("spend_days.json", jsonData, 0644)
-		jsonData, err = json.Marshal(oneday)
-		// fmt.Println(string(jsonData))
+		w.Header().Set("Content-Type", "application/json")
 		w.Write(jsonData)
+
+		// 保存至文件
+		SpendDays[t] = oneday
+		jsonData, err = json.MarshalIndent(SpendDays, "", "    ")
+		if err != nil {
+			log.Fatal("marshal json file failed")
+		}
+
+		if ioutil.WriteFile("spend_days.json", jsonData, 0644) != nil {
+			log.Fatal("write json file failed")
+		}
 	} else {
-		// log.Fatalf("errrrrrr %s", err)
+		http.Error(w, "Invalid Detail", http.StatusBadRequest)
 	}
 }
 
@@ -182,7 +192,7 @@ func loadSpendDays() (map[int]*SpendOneDay, error) {
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println(v)
+		// fmt.Println(v)
 	}
 
 	return temp, nil

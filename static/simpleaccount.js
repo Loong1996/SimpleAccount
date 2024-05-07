@@ -41,7 +41,11 @@ function praseJsonData(data) {
     }
 }
 
-function renderSpendDayTable(dateBeg, dateEnd) {
+function refreshSpendDayTable() {
+    var startDate = document.getElementById('startDate').value;
+    var endDate = document.getElementById('endDate').value;
+    const dateBeg = convertDateFormat(startDate)
+    const dateEnd = convertDateFormat(endDate)
     // 选择表格元素
     let table = document.querySelector('table');
     // 在添加新数据之前清空表格内容
@@ -59,28 +63,29 @@ function renderSpendDayTable(dateBeg, dateEnd) {
     headRow.appendChild(headTotal);
     headRow.appendChild(headDetail);
     table.appendChild(headRow);
-
-    let total = 0;
     for (let i = dateBeg; i <= dateEnd; i++) {
-
-            // 创建行元素
-            let row = document.createElement('tr');
-            // 创建单元格并设置内容
-            let dateCell = document.createElement('td');
-            let totalCell = document.createElement('td');
-            let detailCell = document.createElement('td');
-            let button = document.createElement('button');
+        // 创建行元素
+        let row = document.createElement('tr');
+        // 创建单元格并设置内容
+        let dateCell = document.createElement('td');
+        let totalCell = document.createElement('td');
+        totalCell.setAttribute('id', `tableTotal${i}`);
+        let detailCell = document.createElement('td');
+        let button = document.createElement('button');
 
         if (SpendDays.hasOwnProperty(i)) {
             let entry = SpendDays[i];
             dateCell.textContent = i; // 格式化日期，注意时间戳转毫秒
             totalCell.textContent = entry.total; // 总结
+            if (entry.total >= 0) {
+                totalCell.style.color = "green";
+            } else {
+                totalCell.style.color = "red";
+            }
+
             button.textContent = entry.detail;
-            total += entry.total;
-            // 存在数据
         } else {
             dateCell.textContent = i;
-            // 不存在数据
         }
 
         // 注意：实际应用中应避免使用内联JavaScript，这里仅为示例
@@ -95,38 +100,62 @@ function renderSpendDayTable(dateBeg, dateEnd) {
         // 将行添加到表格中
         table.appendChild(row);
     }
-
-    document.getElementById("totalAmount").innerText = total
 }
 
-function querySpendDay(button) {
+function refreshTotalAmount() {
+    var startDate = document.getElementById('startDate').value;
+    var endDate = document.getElementById('endDate').value;
+    const dateBeg = convertDateFormat(startDate)
+    const dateEnd = convertDateFormat(endDate)
+    let total = 0;
+    for (let i = dateBeg; i <= dateEnd; i++) {
+        if (SpendDays.hasOwnProperty(i)) {
+            let entry = SpendDays[i];
+            total += entry.total;
+        }
+    }
+
+    var cell = document.getElementById("totalAmount");
+    cell.innerText = total;
+    if (total >= 0) {
+        cell.style.color = "green";
+    } else {
+        cell.style.color = "red";
+    }
+}
+
+function querySpendDay() {
     // 请求数据之前先清空数据
     let table = document.querySelector('table');
     table.innerHTML = '';
+    document.getElementById("totalAmount").innerText = 0;
 
     var startDate = document.getElementById('startDate').value;
     var endDate = document.getElementById('endDate').value;
     var url = `http://localhost:8000/api/query?startDate=${startDate}&endDate=${endDate}`
     fetch(url)
     .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok ' + response.statusText);
+            if (!response.ok) {
+                window.alert("querySpendDay出现错误");
+                throw new Error('Network response was not ok ' + response.statusText);
             }
 
-        return response.json();
+            return response.json();
         })
     .then(data => {
         SpendDays = {};
         // console.log(data)
         // 保存数据至字典
-        praseJsonData(data)
+        praseJsonData(data);
         //console.log(SpendDays)
-        const dateBeg = convertDateFormat(startDate)
-        const dateEnd = convertDateFormat(endDate)
-        renderSpendDayTable(dateBeg, dateEnd)
+        refreshSpendDayTable();
+        refreshTotalAmount();
     })
-    .catch(error => console.error('There has been a problem with your fetch operation:', error));
+    .catch(error => {window.alert("querySpendDay出现错误"); console.error('There has been a problem with your fetch operation:', error); });
 };
+
+// 第一次加载自动请求
+querySpendDay();
 
 /////////////////////////////////////////////////////////
 // 模态对话框
@@ -141,28 +170,43 @@ function showEditDetailModal(button) {
 
 function editDone() {
     var txt = document.getElementById("editDetailInput").value;
-    if (txt == "") {
-        // todo 空内容
-    }
-
+    var encodedValue = encodeURIComponent(txt);
     const specificDigits = currentButton.id.match(/^(\w+)(\d{8})$/);
     var time = specificDigits[2];
     // 更改数据请求
-    var url = `http://localhost:8000/api/update?time=${time}&detail=${txt}`
+    var url = `http://localhost:8000/api/update?time=${time}&detail=${encodedValue}`
     fetch(url)
     .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok ' + response.statusText);
+            if (!response.ok) {
+                window.alert("editDone出现错误");
+                throw new Error('Network response was not ok ' + response.statusText);
             }
 
             return response.json();
         })
     .then(data => {
-        
-    })
-    .catch(error => console.error('There has been a problem with your fetch operation:', error));
+        if (!data.hasOwnProperty("time")) {
 
-    // currentButton.textContent = txt;
+        } else {
+            SpendDays[data.time] = {
+                time: data.time,
+                detail: data.detail,
+                total: data.total
+            };
+
+            currentButton.textContent = data.detail;
+            var totalCell = document.getElementById(`tableTotal${data.time}`);
+            totalCell.textContent = data.total;
+            if (data.total >= 0) {
+                totalCell.style.color = "green";
+            } else {
+                totalCell.style.color = "red";
+            }
+        }
+
+        refreshTotalAmount();
+    })
+    .catch(error => { window.alert("editDone出现错误"); console.error('There has been a problem with your fetch operation:', error); });
 
     modal.style.display = "none";
 }
