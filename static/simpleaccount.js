@@ -86,9 +86,11 @@ function refreshSpendDayTable() {
         let detailCell = document.createElement('td');
         let button = document.createElement('button');
 
+        var dateStr = i.toString(); // 将数字转换为字符串
+        var formattedDateStr = dateStr.substring(0, 4) + "-" + dateStr.substring(4, 6) + "-" + dateStr.substring(6, 8);
+        dateCell.textContent = formattedDateStr; 
         if (SpendDays.hasOwnProperty(i)) {
             let entry = SpendDays[i];
-            dateCell.textContent = i; // 格式化日期，注意时间戳转毫秒
             totalCell.textContent = entry.total.toFixed(2); // 总结
             if (entry.total >= 0) {
                 totalCell.style.color = "green";
@@ -97,8 +99,6 @@ function refreshSpendDayTable() {
             }
 
             button.textContent = entry.detail;
-        } else {
-            dateCell.textContent = i;
         }
 
         // 注意：实际应用中应避免使用内联JavaScript，这里仅为示例
