@@ -6,8 +6,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type SpendOne struct {
@@ -167,6 +169,15 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		if ioutil.WriteFile("spend_days.json", jsonData, 0644) != nil {
 			log.Fatal("write json file failed")
 		}
+
+		// 备份
+		os.Mkdir("bck", 0755)
+		currentTime := time.Now()
+		dateString := currentTime.Format("2006-01-02")
+		fileName := fmt.Sprintf("bck/spend_days_%s.json", dateString)
+		if ioutil.WriteFile(fileName, jsonData, 0644) != nil {
+			log.Fatal("write json bck file failed")
+		}
 	} else {
 		http.Error(w, "Invalid Detail", http.StatusBadRequest)
 	}
@@ -198,13 +209,33 @@ func loadSpendDays() (map[int]*SpendOneDay, error) {
 	return temp, nil
 }
 
+// /////////////////////////////
+// 配置
+// /////////////////////////////
+type Config struct {
+	Port int `json:"port"`
+}
+
+var config Config
+
 func main() {
 	var err error
 	SpendDays, err = loadSpendDays()
 	if err != nil {
-		return
+		panic(err)
 	}
 
+	// 读取配置文件
+	configData, err := ioutil.ReadFile("config.json")
+	if err != nil {
+		panic(err)
+	}
+
+	if err := json.Unmarshal(configData, &config); err != nil {
+		panic(err)
+	}
+
+	// Http
 	fs := http.FileServer(http.Dir("./static"))
 	// 静态
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -227,5 +258,5 @@ func main() {
 	http.HandleFunc("/api/query", QueryHandler)
 	http.HandleFunc("/api/update", UpdateHandler)
 	// 监听
-	http.ListenAndServe(":8000", nil)
+	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
 }
