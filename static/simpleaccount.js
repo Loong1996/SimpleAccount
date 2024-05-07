@@ -167,8 +167,36 @@ function querySpendDay() {
     .catch(error => {window.alert("querySpendDay出现错误"); console.error('There has been a problem with your fetch operation:', error); });
 };
 
-// 第一次加载自动请求
 querySpendDay();
+
+/////////////////////////////////////////////////////////
+// 实时资产
+/////////////////////////////////////////////////////////
+function queryProperty() {
+    var url = `${getCurrentBaseUrl()}/api/query_property`
+    fetch(url)
+    .then(response => {
+            if (!response.ok) {
+                window.alert("queryProperty出现错误");
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+
+            return response.text();
+        })
+    .then(data => {
+        console.log(data);
+        var elem = document.getElementById("propertyAmount")
+        elem.textContent = data;
+        if (parseFloat(data) >= 0) {
+            elem.style.color = "green";
+        } else {
+            elem.style.color = "red";
+        }
+    })
+    .catch(error => { window.alert("queryProperty出现错误"); console.error('There has been a problem with your fetch operation:', error); });
+}
+
+queryProperty();
 
 /////////////////////////////////////////////////////////
 // 模态对话框
@@ -221,6 +249,7 @@ function editDone() {
     })
     .catch(error => { window.alert("editDone出现错误"); console.error('There has been a problem with your fetch operation:', error); });
 
+    queryProperty();
     modal.style.display = "none";
 }
 

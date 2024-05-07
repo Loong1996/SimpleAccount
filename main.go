@@ -136,6 +136,15 @@ func QueryHandler(w http.ResponseWriter, r *http.Request) {
 	// w.Write([]byte(result))
 }
 
+func QueryPropertyHandler(w http.ResponseWriter, r *http.Request) {
+	var total float64
+	for _, v := range SpendDays {
+		total += v.Total
+	}
+
+	w.Write([]byte(fmt.Sprintf("%.02f", total)))
+}
+
 func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	t, err := strconv.Atoi(r.URL.Query().Get("time"))
 	if err != nil {
@@ -256,6 +265,7 @@ func main() {
 
 	// 数据查询
 	http.HandleFunc("/api/query", QueryHandler)
+	http.HandleFunc("/api/query_property", QueryPropertyHandler)
 	http.HandleFunc("/api/update", UpdateHandler)
 	// 监听
 	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
