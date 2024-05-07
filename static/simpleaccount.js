@@ -89,7 +89,7 @@ function refreshSpendDayTable() {
         if (SpendDays.hasOwnProperty(i)) {
             let entry = SpendDays[i];
             dateCell.textContent = i; // 格式化日期，注意时间戳转毫秒
-            totalCell.textContent = entry.total; // 总结
+            totalCell.textContent = entry.total.toFixed(2); // 总结
             if (entry.total >= 0) {
                 totalCell.style.color = "green";
             } else {
@@ -129,7 +129,7 @@ function refreshTotalAmount() {
     }
 
     var cell = document.getElementById("totalAmount");
-    cell.innerText = total;
+    cell.innerText = total.toFixed(2);
     if (total >= 0) {
         cell.style.color = "green";
     } else {
@@ -209,7 +209,7 @@ function editDone() {
 
             currentButton.textContent = data.detail;
             var totalCell = document.getElementById(`tableTotal${data.time}`);
-            totalCell.textContent = data.total;
+            totalCell.textContent = data.total.toFixed(2);
             if (data.total >= 0) {
                 totalCell.style.color = "green";
             } else {
