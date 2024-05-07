@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="simpleaccount.css">
+</head>
+<body>
+    <h2>记账表格</h2>
+
+    <form id="dateRangeForm">
+        <label for="startDate">起始日期:</label>
+        <input type="date" id="startDate" name="startDate">
+        <label for="endDate">结束日期:</label>
+        <input type="date" id="endDate" name="endDate"><br>
+        <button type="button" id="queryButton" onclick="querySpendDay(this)">查询</button>
+        <div data-type="total">总计: <span id="totalAmount">0</span></div>
+    </form>
+
+    <!-- 模态对话框 -->
+    <div id="editDetailModal" class="modal">
+    <div class="modal-content">
+        <!-- <span class="close">×</span> -->
+        <textarea id="editDetailInput"></textarea>
+        <div id="detailModalButton">
+        <button id="editCancelBtn" onclick="editCancel()">取消</button>
+        <button id="editDoneBtn" onclick="editDone()">确认</button>
+        </div>
+    </div>
+    </div>
+
+    <table>
+        <!-- <tr>
+            <th>日期</th>
+            <th>总结</th>
+            <th>详情</th>
+        </tr>
+        <tr>
+            <td>%s</td>
+            <td>%d</td>
+            <td><button onclick="showEditDetailModal(this)">%s</button></td>
+        </tr> -->
+    </table>
+
+    <script src="simpleaccount.js"></script>
+</body>
+</html>

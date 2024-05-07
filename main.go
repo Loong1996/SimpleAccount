@@ -24,6 +24,9 @@ type SpendOneDay struct {
 var SpendDays map[int]*SpendOneDay
 
 func (this *SpendOneDay) praseSpendDetail() error {
+	this.SpendLst = nil
+	this.Total = 0
+
 	str := []rune(this.Detail)
 	var numStr []rune
 	var keyStr []rune
@@ -131,25 +134,65 @@ func QueryHandler(w http.ResponseWriter, r *http.Request) {
 	// w.Write([]byte(result))
 }
 
+func loadSpendDays() (map[int]*SpendOneDay, error) {
+	// 从文件中读取JSON数据
+	jsonData, err := ioutil.ReadFile("spend_days.json")
+	if err != nil {
+		return nil, err
+	}
+
+	// 初始化一个用于反序列化的映射
+	var temp map[int]*SpendOneDay
+	// 反序列化JSON数据到映射
+	err = json.Unmarshal(jsonData, &temp)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range temp {
+		err = v.praseSpendDetail()
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(v)
+	}
+
+	return temp, nil
+}
+
 func main() {
-	SpendDays = make(map[int]*SpendOneDay, 0)
-
-	// TODO 数据加载与解析
-	SpendDays[20240102] = &SpendOneDay{
-		Time:   20240102,
-		Detail: "朴朴123 零花钱+200",
-	}
-	SpendDays[20240103] = &SpendOneDay{
-		Time:   20240103,
-		Detail: "67788",
+	var err error
+	SpendDays, err = loadSpendDays()
+	if err != nil {
+		return
 	}
 
-	for _, v := range SpendDays {
-		v.praseSpendDetail()
-	}
+	// // 将SpendDays序列化为JSON
+	// jsonData, err := json.MarshalIndent(SpendDays, "", "    ")
+	// if err != nil {
+	// 	log.Fatalf("Error marshalling to JSON: %s", err)
+	// }
 
-	// 主页
-	http.HandleFunc("/", MainHandler)
+	// ioutil.WriteFile("spend_days.json", jsonData, 0644)
+
+	fs := http.FileServer(http.Dir("./static"))
+	// 静态
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// 检查请求的URL路径是否以.css结尾
+		if r.URL.Path[len(r.URL.Path)-4:] == ".css" {
+			// 直接使用FileServer处理CSS请求
+			fs.ServeHTTP(w, r)
+		} else if r.URL.Path[len(r.URL.Path)-5:] == ".html" {
+			// 直接使用FileServer处理HTML请求
+			fs.ServeHTTP(w, r)
+		} else if r.URL.Path[len(r.URL.Path)-3:] == ".js" {
+			fs.ServeHTTP(w, r)
+		} else {
+			// 如果请求的不是.css或.html文件，返回404错误
+			http.NotFound(w, r)
+		}
+	})
+
 	// 数据查询
 	http.HandleFunc("/api/query", QueryHandler)
 	// 监听
